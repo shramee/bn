@@ -577,17 +577,32 @@ pub struct G2Precomp {
 }
 
 impl G2Precomp {
+    // 'miller_loop()' uses a pre-computed elliptic curve group G2 point and an
+    // affine elliptic curve group G1 point to calculate a point in Fq12 field.
     pub fn miller_loop(&self, g1: &AffineG<G1Params>) -> Fq12 {
+        
+        // It starts by initializing Fq12 field point 'f' to 1.
         let mut f = Fq12::one();
 
+        
+        // and also initializing the index counter for the coefficients.
         let mut idx = 0;
 
+        // It then iterates through each bit in a binary representation of a constant
+        // multiplier used in the Ate pairing algorithm.
         for i in ATE_LOOP_COUNT_NAF.iter() {
+            
+            // For each iteration, it gets the corresponding pre-computed coefficient from the array.
             let c = &self.coeffs[idx];
             idx += 1;
+
+            // Then it squares the Fq12 point and multiplies it by the elliptic curve formulated by the coefficient.
+            // The `.scale()` method multiplies an affine G1 point by a scalar Fq2 point to get a new G1 point.
             f = f.squared()
                 .mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
 
+            // If the current bit in the binary representation of the constant multiplier is not zero,
+            // it again gets the next coefficient and multiplies it to the Fq12 point.
             if *i != 0 {
                 let c = &self.coeffs[idx];
                 idx += 1;
@@ -595,6 +610,8 @@ impl G2Precomp {
             }
         }
 
+        // There are two final point multiplications with the last pre-computed coefficients
+        // outside of the main Miller loop.
         let c = &self.coeffs[idx];
         idx += 1;
         f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
@@ -602,6 +619,7 @@ impl G2Precomp {
         let c = &self.coeffs[idx];
         f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
 
+        // Finally, it returns the calculated Fq12 field point.
         f
     }
 }

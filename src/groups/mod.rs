@@ -771,15 +771,25 @@ impl AffineG<G2Params> {
         }
     }
 
+    // 'precompute()' method is used to calculate the pre-computed coefficients and stores them in a 'G2Precomp' instance.
     pub fn precompute(&self) -> G2Precomp {
+        // Transform the point into Jacobian coordinates. This is done because addition and doubling are
+        // computationally cheaper in Jacobian coordinates.
         let mut r = self.to_jacobian();
 
+        // Pre-allocate a vector to store the pre-computed coefficients.
         let mut coeffs = Vec::with_capacity(102);
 
+        // The negative of the current point is also computed as its needed in the miller loop.
         let q_neg = self.neg();
+
+        // Iterate through each bit of the constant multiplier (ATE_LOOP_COUNT_NAF)
+        // and calculate the necessary coefficients.
         for i in ATE_LOOP_COUNT_NAF.iter() {
+            // Calculate the result of the doubling step of the Miller loop and save this in the pre-computed coefficients.
             coeffs.push(r.doubling_step_for_flipped_miller_loop());
 
+            // Depending on the value of 'i' in the iteration, addition steps are performed and stored too.
             if *i == 1 {
                 coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(self));
             }
@@ -787,12 +797,15 @@ impl AffineG<G2Params> {
                 coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q_neg));
             }
         }
+
+        // Two more addition steps with specially calculated points are performed and stored.
         let q1 = self.mul_by_q();
         let q2 = -(q1.mul_by_q());
 
         coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q1));
         coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q2));
 
+        // It finally returns a new G2Precomp instance containing the original G2 point and the pre-computed coefficients.
         G2Precomp {
             q: *self,
             coeffs: coeffs,

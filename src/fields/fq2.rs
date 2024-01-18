@@ -4,7 +4,7 @@ use crate::fields::{const_fq, FieldElement, Fq};
 use crate::arith::{U256, U512};
 
 #[inline]
-fn fq_non_residue() -> Fq {
+fn _fq_non_residue() -> Fq {
     // (q - 1) is a quadratic nonresidue in Fq
     // 21888242871839275222246405745257275088696311157297823662689037894645226208582
     const_fq([
@@ -62,7 +62,7 @@ impl Fq2 {
         } else {
             Fq2 {
                 c0: self.c0,
-                c1: self.c1 * fq_non_residue(),
+                c1: self.c1.mul_by_nonresidue(),
             }
         }
     }
@@ -110,8 +110,8 @@ impl FieldElement for Fq2 {
         let ab = self.c0 * self.c1;
 
         Fq2 {
-            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1) - ab
-                - ab * fq_non_residue(),
+            c0: (self.c1.mul_by_nonresidue() + self.c0) * (self.c0 + self.c1) - ab
+                - ab.mul_by_nonresidue(),
             c1: ab + ab,
         }
     }
@@ -120,7 +120,7 @@ impl FieldElement for Fq2 {
         // "High-Speed Software Implementation of the Optimal Ate Pairing
         // over Barreto–Naehrig Curves"; Algorithm 8
 
-        match (self.c0.squared() - (self.c1.squared() * fq_non_residue())).inverse() {
+        match (self.c0.squared() - (self.c1.squared().mul_by_nonresidue())).inverse() {
             Some(t) => Some(Fq2 {
                 c0: self.c0 * t,
                 c1: -(self.c1 * t),
@@ -142,7 +142,7 @@ impl Mul for Fq2 {
         let bb = self.c1 * other.c1;
 
         Fq2 {
-            c0: bb * fq_non_residue() + aa,
+            c0: bb.mul_by_nonresidue() + aa,
             c1: (self.c0 + self.c1) * (other.c0 + other.c1) - aa - bb,
         }
     }

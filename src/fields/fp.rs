@@ -257,6 +257,12 @@ impl Fq {
             Some(a1a)
         }
     }
+
+    pub fn mul_by_nonresidue(&self) -> Self {
+        // (q - 1) is a quadratic nonresidue in Fq
+        // Additive inverse for mul by (q - 1) or (-1 mod q)
+        -*self
+    }
 }
 
 #[inline]
